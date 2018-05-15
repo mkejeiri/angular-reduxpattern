@@ -1,0 +1,27 @@
+<div class="row">
+    <div class="col-xs-12">
+        <div class="row">
+            <div class="col-xs-8">
+            <!-- <button class="btn btn-success"
+            [routerLink]="['new']">new recipe</button> -->
+            <button class="btn btn-success"
+            (click)='onNewRecipe()'>new recipe</button>
+            </div>
+            <div class="col-xs-4">
+            <span class="badge alert-success" *ngIf="!hideMessage">data saved...</span>    
+            </div>
+        </div>
+      
+    </div>
+</div>
+<hr>
+<div class="row">
+    <div class="col-xs-12">
+        <a class="list-group-item clearfix" *ngFor="let recipe of recipes; let i=index">
+           <app-recipe-item 
+           [recipeItem] = recipe 
+           [index]=i>loading...</app-recipe-item>
+        </a>       
+    </div>
+</div>
+

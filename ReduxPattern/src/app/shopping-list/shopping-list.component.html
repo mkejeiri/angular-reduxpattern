@@ -1,0 +1,24 @@
+<div class="row">
+  <div class="col-xs-10">
+    <!-- <app-shopping-edit (ingredientAdded)="onIngedientWasAdded($event)"></app-shopping-edit>   -->
+    <app-shopping-edit></app-shopping-edit>  
+    <hr>
+    <button class="btn btn-info" (click)="onSaveIngredients()">Save Ingredients</button>
+    <button class="btn btn-warning" (click)="onGetIngredients()">Get Ingredients</button>
+    <hr>
+    <ul class="list-group">
+        <!-- 
+          LOADING through STORE NgRx:
+          we have to add async pipe because ingredients becomes the observable shoppingListState
+          and we need to access the Prop ingredients () : {shoppingList:{ingredients:Ingredient[]}}
+          *ngFor="let ingredient of ingredients; let i=index" (click)="onStartEdit(i)"> 
+        -->
+      <a 
+      class="list-group-item" 
+      style="cursor:pointer" 
+      *ngFor="let ingredient of (shoppingListState | async).ingredients; let i=index" (click)="onStartEdit(i)">
+        {{ingredient.name}}  ({{ingredient.amount}})
+      </a>
+    </ul>
+  </div>
+</div>

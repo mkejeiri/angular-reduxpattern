@@ -1,0 +1,45 @@
+<div class="row">
+    <div class="col-xs-12 col-sm-10 col-md-8 col-sm-offset-1 col-md-offset-2">
+        <form #f="ngForm" (ngSubmit)="onSignup(f)">   
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input id="email" type="email"  name ="email" class="form-control" ngModel required email>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" 
+                      type="password" 
+                      name ="password" 
+                      class="form-control"                       
+                      ngModel
+                      required
+                      #password="ngModel">
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm password</label>
+                <input id="confirmPassword"
+                       type="password" 
+                       name ="confirmPassword" 
+                       class="form-control" 
+                       ngModel
+                       required
+                       #confirmPassword="ngModel">
+            </div>
+
+             <!-- 
+              the form is valid or not is part of appState (state form valid or not), however, this is a local UI state
+              i.e. it's only relavant to this template state. In theory we could listen to value changes and dispacth actions
+              accordingly, and change some valid property from valid(resp invalid)  to invalid (resp valid).
+              since we handle a local UI here we DO NOT need to use ngrx for that. 
+              BUT ngrx is more effecient/handy when it comes to app state changes which spans to multiple 
+              components (whole app state). 
+
+              The same goes for routing, if we switch the page and if this lead us to load 
+              a special feature module we could indeed argue that it is a change in the app state. 
+            -->
+              <button type="submit" class="btn btn-primary" [disabled]="(!f.valid) ||(confirmPassword.value != password.value)">Sign Up</button>
+              <span>have an Account? <a routerLink="/signin">Sign in</a></span>
+            </form>
+    </div>  
+  </div>
+  

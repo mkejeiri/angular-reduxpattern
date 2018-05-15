@@ -1,0 +1,526 @@
+								MODULE - in Few words
+	In module we find two type of code feature: 
+	-1 Typescript features: there are language features and simply required from a technical perspective, e.g where to find a class, interface, or where it lives..., this is not related to angular module in anyway, only typescript need those import, and at the end webpack which used by the CLI will bundle these imports in one final file!  
+
+	2- Module feature: it has a declarations, imports, providers and boostrap, exports array: 
+						declarations array: mainly contains the components	
+						imports array: contains built-in module and user modules, e.g FormsModule which simply defines a bunch of directive we can use, like ngModel and ngForm...
+						exports array: exportable modules used by others modules which imports the current one.
+						providers array: mainly contains services
+						bootstrap: array contains the app entry point components (root component)
+						
+
+					
+					Why Use Feature-Modules?
+		It 's a great enghancement of code structuring: custom module would be a Feature-Module	which contains its own components, directives, services which makes a only a simple
+		feature in the apps, so we could group them together (e.g recipe books)... the apps will be boosted, linear and easy to maintain, it's much easier to know which component,
+		services or modules belong to which specific feature, if we have a change request we know that we have to go only for a specific feature and quickly we can ID which
+		dependency we have. Using Feature-Module will speedup the app and increase the performance, reduce the file size.	 
+
+
+		DO NOT FORGET to imports CommonModule in every Feature-Module:						
+		to be accurate we don't have to add CommonModule into every Feature-Module,
+        CommonModule would give access to common directives (e.g ngClass, ngIf,...) 
+        chances are highly that featurse module use one of this directive!
+		in AppModule we use BrowserModule, this has in addition to CommonModule features; features that are needed only at the app startup,
+		that why we should use BrowserModule in AppModule and CommonModule in Feature-Modules 
+					   
+
+
+	   Directives/pipes AVOID DOUBLE 'declarations'
+	   DropdownDirective : we cannot declare the same pipes or directive in more than one module
+	   Otherwise we get an error : Uncaught Error: Type DropdownDirective is part of the declarations of 2 modules.
+					   
+					   
+					   
+		WHY routing doesn't work ! :  Error :  'router-outlet' is not a known element				
+		inside the recipes component we have <router-outlet> but we don't have a routing module to handles this, the AppRoutingModule has all 
+		the needed declarations, even if we import AppRoutingModule into RecipesModule, this routing doesn't trikle down to the RecipesModule!!!. 
+		in that sense, 'Services' are kind of exception, but regarding components and modules all what declared and imported into RecipesModule can be used in RecipesModule!!!	
+		Basically, if we create a Feature-Module we have also to move the routes (if we have   <router-outlet> inside a feature component) related to this Feature-Module, 
+		e.g RecipesRoutingModule :
+			1- imports:[RouterModule.forChild(recipesRoutes)]: beware that RouterModule.forRoot(recipesRoutes) only in root app module valid since 
+			 we no longer in a root module every feature routing module is a child module, here we should use : RouterModule.forChild(recipesRoutes)
+			 at the end everything will be directly/indirectly imported into AppModule
+													
+			2- the RecipesRoutingModule need to be imported to the RecipesModule.
+													
+
+													
+									SHARED MODULE		
+	We have a DropdownDirective which shared by recipeModule and also the header, so a solution would be to put it in shared module. 
+	it's module  which is not a feature but only holds elements shared across modules. 													
+		
+	@NgModule({
+	 declarations:[
+		 DropdownDirective //we cannot declare the same pipes or directive in more than one module
+		//Otherwise we get an error : Uncaught Error: Type DropdownDirective is part of the declarations of 2 modules]
+		],
+	 exports:[
+		 CommonModule, //importing CommonModule is optional we could export it without importing it
+		 DropdownDirective] //by default everything we setup in module is available only inside that module
+								 //since here we will use DropdownDirective outside, we need to export it to make available
+								//outside. 
+	})
+	export class SharedModule {
+
+	}
+    
+    
+    Routing VS selector (component) : few words!
+
+    the routing module doesn't need a declaration for the component which is used in the routing, it merely need a typescript import!, technically the routing module not 
+    related to it feature-module or AppModule in anyway, a part from the fact that the routes are exported from routing module to Feature/AppModule, all what routing
+    module needs is that the component to be declared somewhere in Feature/AppModule before it get rendered/used!.
+   
+    Nesting Components however, requires the nested components to be declared in the module of the parent/holding component or to be declared in a Feature-Module and to
+    be exported somehow (like drowpdown diretive!) into the module of the parent/holding component. Otherwise, Angular will break  
+    
+					EXAMPLE :
+    <app-signin></app-signin> is used by AuthModule and not declared in the AppComponent, to be able to nest it in AppComponent we need to declare in AppModule, or 
+    we have to export it into AppComponent using the feature-module AuthModule; we need to expose (export) the nested component AppSignin though before importing it
+    into AppComponent, Otherwise we get an error: app-signin is uknown element.
+    
+    So, unlike components (selectors), when it comes to routing we DO NOT need to declare components (e.g. SignupComponent,SigninComponent inside AppRoutingModule) 
+    in order to use the routing, we merely need to import them (typescript language feature). 
+    
+    
+    
+    lazy LOADING
+    so far we always load eagerly because we always imports all features module in AppModule, i.e when at the app startup, it bootraps with AppModule and everything in the AppModule
+    imports [..,..,..]  is imported! and webpack bundles everything in a single bundles.js.
+    
+    if users could oprionally visit some features (module features), we could lazy load those feature, this will boost the app performance significantly, since webpack won't include 
+    this Feature-Module in the bundle at the start.
+    
+    
+    
+    HOW TO PROCEED: example recipe apps : 
+    here, we lazy load recipes feature : RecipesModule.
+    1- In AppModule remove all references to recipe (ts imports, declarations, imports), since our app it's restructed we only NEED to REMOVE 'RecipesModule and ShoppingListModule' to prevent WEBPACK from adding those elements into the bundles!    
+    2- Now, webpack doesn't add RecipesModule into the bundles.js, that means all the TS import statement inside RecipesModule and the  imports[] aren't added too.
+    3- In AppRoutingModule, add lazy loading of the route to the recipes:
+         DO NOT DO THIS {path:'recipes', component:RecipesComponent} it's an eager loading!!!!
+         DO THIS instead : 
+         {path:'' , component:HomeComponent}, //eager loading use a component with type, lazy loading use a string.
+         {path:'recipes',loadChildren:'./recipes/recipes.module#RecipesModule'} //here where the lazy loading occurs, DO NO FORGET #ModuleClassName = #RecipesModule 
+         pathern : {path:'route',loadChildren:'stringfullPathModule#ModuleClassName'}
+        
+    4-  From AppRoutingModule where we use lazy loading ({path:'recipes',loadChildren:'./recipes/recipes.module#RecipesModule'})  we will be landing in RecipesRoutingModule 
+    hence,inside RecipesRoutingModule, we need to do the following change :
+      {path:'recipes', component:RecipesComponent, children:[...]} becomes {path:'', component:RecipesComponent, children:[...]}
+    
+    
+    
+    MODULE && SERVICE INJECTION
+    
+    Note that, the root injector is created at app startup, it will performs all the required injections.
+    
+    If we provide a LogService (e.g. Providers[LogService]) in FeatureModule and in the AppModule we will get single instance of that LogService from the root 
+    injector in the apps, if on top that we provide the LogService in the Feature-Module Component then we will get a separate (i.e, from the global app instance of LogService) 
+    instance LogService, In such a case, the lazy-loaded module (even though it was loaded at later point-in-time!) will still get the global instance of LogService
+    from the root injector.
+    
+    If we provide the LogService (e.g. Providers[LogService]) in AppModule , eagerly-loaded Feature-Module and lazy-loaded Feature-Module; AppModule and eagerly-loaded
+    Feature-Module will use the same LogService instance created by the root injector whereas, the lazy-loaded Feature-Module will use a separate instance of LogService 
+    (i.e angular will create a child injector for  lazy-loaded Feature-Module!).
+    
+    The same goes if we provide LogService (e.g. Providers[LogService]) at the eagerly-loaded feature-Module 'Component' level, angular will create a child injector and we will 
+    get a separate instance of LogService for that module, this how we also enfore "Module scope" in eagerly-loaded Feature-Module (by providing LogService in the 
+    component instead of module).
+    
+    
+    
+    
+    
+    
+                      W A R N I N G
+                      
+    AVOID providing the LogService (e.g. Providers[LogService]) in a shared module 
+    
+    If you plan to add the LogService (e.g. Providers[LogService]) in a shared module used by a lazy-loaded Feature-Module, you should know that at the time when you visit 
+    the part that triggers the loading of the lazy-loaded Feature-Module, the lazy-loaded feature-module will get temporarely the same global instance of LogService,
+    but soon afterward Angular will create a child injector which will create another separate instance of the LogService, because the imported shared module 
+    which provides the LogService (Providers[LogService]) will be imported after the lazy loading. WE SHOULD AVOID providing services in Shared Module especially if the 
+    lazy-loaded Feature-Module is using the shared module!.
+    
+    If we want a shared instance of LogService, we shouldn't leave it in the shared Module, unless if we want an exculive instance of the LogService in such case 
+    we provide it in the lazy-loaded feature-Module. 
+    
+                
+                
+    
+    
+                    Core Module                   
+                    
+    The remaining components (a part from AppComponent) used in app root should be considered as a Core component, so we need to :
+      - Create a Core folder + CoreModule
+      - Move all component to that folder 
+      - Move the AppRoutingModule to that folder
+    
+    The CoreModule will be only impoted by the root module (AppModule) and it will include all the imports needed by the Root module, it will include the component directly 
+    used by the AppComponent.
+
+
+	AHEAD OF TIME COMPILATION (AOT)
+  the CLI already compile ts into JS, so no need to do any complilation, AOT means that we compile the 'templates' into JS right away and we minify everything      
+  right after Dev, so that the app could be ready to loaded into the browser: 
+
+   A- Just-in-time compilation(JIT) (default): 
+	1- dev: we dev our app
+	2- prod: ng serve and we ship our code
+	3- app (whole source) get downloaded in the browser: we view the app in the browser, angular boostrap the app and then also (step4)
+	4- Angular parses and compiles templates into JS
+
+  B- AHEAD OF TIME COMPILATION (AOT)
+	1- DEV
+	2- Angular parses and compiles templates into JS :angular compiles all the dynamic and static feature of the html template (e.g. create html elmenent with JS),
+	   we let angular undertand and parse the template at an early point-in-time.  
+	3- PRD
+	4- app (whole source) get downloaded in the browser.
+
+
+	Advantage of AOT
+	- Faster app startup since parsing and compilation doesn't happens in the browser
+	- Templates get checked right after DEV, all the errors thrown in the browser in the JIT approach, will be thrown already in the build process .
+	- much smaller file size: in JIT angluar will ship the whole compiler, because :
+		-- It needs to compile the code in the browser, one step skipped using AOT
+		-- Since the compiler isn't part of the business logic, we will be better off using AOT because we avoid to ship it and save a lot of code!
+		-- Angular will stripp off some features, since it analyses the templates and check if you use them :
+			e.g. angular is able to know after it parses the template if you really use ngIf's, it is able to throw the code for ngIf away and remove it 
+			     from the app it you DO NOT use it because it wouldn't be missing.
+	
+
+	
+	PRELOADING in LAZY LOADING
+
+	if we visit our lazy loaded module, we load the chunck at this point-in-time, when the app is downloading into the browser it gives a litte time window, it would be 
+	great if we use the lazy loading but still preload the code while the user is visiting other areas, once the user decide to go in those lazy loading areas you
+	will have the code already availabe. TO DO THIS :
+	- GO to AppRouting module and change: 'RouterModule.forRoot(appRoutes)' TO 'RouterModule.forRoot(appRoutes,{preloadingStrategy:PreloadAllModules})'
+	- the default preloadingStrategy of 'RouterModule.forRoot(appRoutes)' is DontPreload
+	- We could use also advanced custom preloadingStrategy see : https://vsavkin.com/angular-router-preloading-modules-ba3c75e424cb
+
+  
+  
+  DEPLOYEMENT 
+  
+  ng build --prod --aot --base-ref /myapp/ : if we want providedWebhostingURL/myapp ,
+  it also could be done in Index.html file  as follows: <base href="/myapp/"> : we should do /myapp/ not '/myapp', it's an angular requirement.
+  
+
+
+
+
+  Angular 5 new Features: 
+  
+  1- HttpClient/HttpClientModule vs Http/HttpModule 
+    
+   a- HttpClient has 2 new feature :
+    with HttpClient we could cast in the get the data (extracted response body) that we get not that recipes doesn't need the cast afterwards!
+          - Casting of the data : e.g.  this.httpClient.get<Recipe[]>
+          - Response body autoextract: e.g. we get directly the recipes, 
+          
+  
+    b- Using observe
+   
+    the data doesn't get extracted, but stored in a response object see next :        
+    this.httpClient.get('https://recipes-1978.firebaseio.com/recipes.json?auth=' + token,{
+      observe:'response', responseType:'text'}) // the default is json and not text, others options include 'blob' (file download) and 'arraybuffer' 
+      
+    this is the default though :
+    this.httpClient.get<Recipe[]>('https://recipes-1978.firebaseio.com/recipes.json?auth=' + token,{
+      observe:'body', responseType:'json'})
+      
+      
+      
+    c- Observe events:
+   
+     saveData():Observable<Object>{
+    const token = this.authService.getToken();    
+    return this.httpClient.put('https://recipes-1978.firebaseio.com/recipes.json?auth=' + token,
+                        this.recipeService.getRecipes(),
+                        {headers:this.header,observe : 'events' })
+    .map((data)=>{
+      this.IsDataSaved.next(false);
+      return data;
+    
+    
+    On the header component we could listen the response events:
+    
+    enum HttpEventType { Sent = 0, UploadProgress = 1,ResponseHeader = 2,DownloadProgress = 3, Response = 4, User = 5}
+    
+    onSaveData(){
+        this.httpService.saveData()
+        .subscribe((response:HttpEvent<Object>)=>{
+            // if (response.status == 200) {
+            //     console.info('Data is successfully saved');
+            //     this.httpService.IsDataSaved.next(true);
+            // }  
+            console.log(response.type === HttpEventType.Sent);           
+        },
+        (error:Response)=>{
+            console.error(error);
+        });
+    }
+    
+    
+    HttpHearders, 
+        ...
+        {observe:'body', responseType:'json', hearders: new HttpHearders().set('h1','h2','h3')}  
+
+    
+    d- QUERY PARMS:PARMS
+    
+    readonly headers = new HttpHeaders().set('Content-Type','application/json');
+    
+    
+   this.httpClient.get<Recipe[]>('https://recipes-1978.firebaseio.com/recipes.json?auth=' + token,{
+      observe:'body', responseType:'json'})
+    
+    Becomes     
+    
+    this.httpClient.put('https://recipes-1978.firebaseio.com/recipes.json',
+                        this.recipeService.getRecipes(),
+                        {
+                          observe:'body',
+                          headers:this.headers,
+                          params: new HttpParams().set('auth', token)
+                        })
+    
+    
+    
+    
+    
+    e- Progress bar:
+    
+    saveData():Observable<Object>{
+    const token = this.authService.getToken();    
+    // return this.httpClient.put('https://recipes-1978.firebaseio.com/recipes.json',
+    //                     this.recipeService.getRecipes(),
+    //                     {
+    //                       observe:'body',
+    //                       headers:this.headers,
+    //                       params: new HttpParams().set('auth', token)
+    //                     })
+    // .map((data)=>{
+    //   this.IsDataSaved.next(false);
+    //   return data;
+    // });
+
+    const req = new HttpRequest('PUT','https://recipes-1978.firebaseio.com/recipes.json', this.recipeService.getRecipes(),
+                  {reportProgress:true, params: new HttpParams().set('auth', token)}
+                  )
+
+     return this.httpClient.request(req);
+  }
+    
+  
+  f-  Interceptors
+      ------------
+  to avoid DRY, e.g setting a hearder or params in get or put request!
+  to avoid this we ought to:
+    1- Create an AuthInterceptor implements HttpInterceptor    
+    }
+    2- register it in the CoreModule providers [.., {provide:HTTP_INTERCEPTORS,useClass:AuthInterceptor,multi:true}]
+    3- remove all params from the get, put, post request. 
+    4- the request are immutables we can edit them. because we could re-try them (observable have a retry), then we will keept intercept them 
+       we should clone a request which allow the modification.
+       
+       
+       
+      AuthInterceptor: Observable consumption
+      ---------------------------------------
+      @Injectable()
+      export class AuthInterceptor implements HttpInterceptor{
+          intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>{
+           //Here we consume the observable and we sent a new clone based on the original copy (at the end we will have a modified copy)
+              return next.handle(req.clone({
+                      headers:new HttpHeaders().set('Content-Type','application/json'),
+                      // params:new HttpParams().set('auth', token) //OR
+                      params: req.params.append('auth',this.authService.getToken())
+                      }
+                  )
+              );
+          }
+          //return next.handle(req); //this allows the request to continue it flow...
+          
+  
+    LoggingInterceptor: No Observable consumption
+    ---------------------------------------------    
+    export class LoggingInterceptor implements HttpInterceptor{
+      intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>{
+          return next.handle(req)
+          .do(event => {  //the do operator allow the excecution of code on any data that goes through observables without consuming the observables.
+             console.log('LoggingInterceptor ', event);
+          });
+      }
+    }
+    
+    CoreModule add the following:
+    {provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    {provide: HTTP_INTERCEPTORS, useClass: LoggingInterceptor, multi: true }  
+	
+
+	------------------
+	APPLICATION STATE
+	------------------ 
+To keep the state of the application and to avoid the complication when the app grow, we use Redux pattern (i.e. Redux uses : Actions, Reducers and Store)
+	1- Store is one central place (i.e 'Store app-state') where the  state lives: components and services comunicates with each others and also with 'store app-state'
+	2- Actions: to change the 'store app state' when changes occur in components/services, we dispatch actions like say 'save post' 
+	3- Reducers: the action for instance, 'save post' will reach  (sent to) a 'reducer': 
+								      a 'reducer' is a custom function which takes an action and potential payload as an input and 
+								      do sth with it to manipulate the original state in an immutable way (i.e doesn't edit the old state it 
+								      overwrites the old state; by taking the old state and editing it a new JS object and saving it. 
+
+
+The Redux pattern is not exculive to REACT we could also use it for Angular app. In fact, there is a special implementation for angular called NgRx which adapt this REACT
+feature (Redux pattern) to fit nicely into angular app, Even supporting feature like lazy loading where we might add sth to a single store only when a certain modules 
+have been loaded. This will be much more relevant in cases of a bigger apps, where natural approach of 'APP state' management through services, component using subject's becomes more cumbersome!. 
+
+
+STEP BY STEP REDUX IMPLEMENTATION:
+-----------------------------------  
+Step 1 :  npm install @ngrx/store --save  //save a prod dependency
+Step 2 : create shoppingListReducers, shopping-list.actions
+Step 3 : Register the reducer in the AppModule (eagerly loaded ShoppingListModule), i.e the StoreModule in AppModule,  so also add the actions dispatching.
+
+In general, we will extend this concept into an App store which in turn uses feature stores (e.g. auth store, shopping list store, recipe store, ...). this allows us to centralize all the feature states globally in the App store. through the REDUX pattern. this comes also at a price of side effect which will be discuss next.
+
+
+----------------------------------------
+Side effect package (@ngrx/effects)
+----------------------------------------
+using NgRx package and more precisely the 'dispatch' method with authentication where HttpClient provides also requests through observable are considered as a side effect, 
+for instance when we sign in the app we dispatch an action and we DO NOT necessarily want to alter/change directly the app store right away because we have other code portions to run first such as reaching to a server and authenticate (e.g. firebase.auth().signInWithEmailAndPassword(email,password)...) which has nothing to do with the 
+APP state, when this authentification 'side effect' is successfully carried out we dispatch an action to alter/change the APP state store. 
+NgRX gives a more elegant way to handle this side effect without leaving the NgRX world!.
+
+
+step 1 : npm install @ngrx/effects --save 
+step 2: adding a new file auth.effects.ts (e.g. export class AuthEffects)
+step 3: ngrx/effects will be able to retrieve automatically the actions registered in the store!, hence the need to register the side effect module in the app module 
+	(e.g. EffectsModule.forRoot([AuthEffects])).
+
+Note: effects are like reducers, so it's kind of the same steps applied, but keep in mind an effect doesn't change AppState but a reducer does!, 
+	an reducer returns always a new/old immutable state!. The effect however, dispatch one or multiple actions which will be handles by the reducer after all. 
+
+
+	----------------------------------------
+	Router Packages (@ngrx/router-store)
+	----------------------------------------
+	This allow us to manage the routing state changes of our APP when we navigate between pages, such as loading of special recipe.
+
+	step 1 : npm install @ngrx/router-store --save 
+	step 2: add the StoreRouterConnectingModule (no need to call forRoot() ).
+		now we register StoreRouterConnectingModule in AppModule we cannot really see if it emits events, and overall debugging our state changes isn't trivial,
+		sometime we see the UI changes sometime is a black box whether the state change or not!. so to look into our routing app state at runtime we will 
+		use another package store-devtools which also required a chrome redux tool.
+
+	step 3: npm install @ngrx/store-devtools --save
+	step 4 : install Redux DevTools chrome extension
+	step 5: add the 'StoreDevtoolsModule' in AppModule 
+
+	NOTE: in the 'SignIn' UI, the form is valid or not is part of appState (i.e. state form valid or not), 
+	      however, this is a local UI state i.e. it's only relavant to this template state. 
+	      In theory we could listen to value changes and dispacth actions accordingly, 
+	      and change some valid property from valid(resp invalid) to invalid (resp valid). 
+	      since we handle a local UI here we DO NOT need to use ngrx for that. 
+
+              BUT ngrx is more effecient/handy when it comes to app state changes which spans to multiple 
+              components (whole app state). 
+
+              The same goes for routing, if we switch the page and if this lead us to load 
+              a special feature module we could indeed argue that it is a change in the app state. and here
+	      where the 'Redux DevTools' debug tool comes handy.
+	 
+
+	------------------------------------
+	Lazy loaded feature APPLICATION STATE
+	------------------------------------ 
+
+	we can add the Lazy loaded feature app state directly to the reducers app because this part is not yet there when our app bootstraps.
+	here the recipe is lazy loaded so we cannot add it to the global app state :
+
+		export interface AppState{
+		    shoppingList:fromShoppingListReducers.State;
+		    auth: fromAuth.AuthState;
+		    recipes:fromRecipe.State; <-- this is not correct!!!
+		}
+	ngrx package has functionalities to deal with the lazy loading to inject dynamically a state into our global apps state the lazy loaded portions app or modules.
+	to fully implement this, we create:
+	- recipe store folder
+	- RecipeReducer
+	- RecipeActions
+	- register the   StoreModule.forFeature('recipes',RecipeReducer) inside RecipeModule : it tells ngrx to add dynamically this reducer to the global app state 
+	  once recipe feature has been added to the App.
+
+
+      NOTE: Using ActionReducerMap, we bundle all our local state (e.g. shoopingList and Auth) into one global state  (AppState) for eagerly loaded module ONLY!, 
+      the lazy loaded module however, should extends their State (e.g. FeatureState) to the global App state since we DO NOT know for sure whether/when 
+      the lazy loaded feature will be loaded.
+ 
+
+
+
+
+	
+
+
+
+
+
+
+
+
+  
+
+  	
+			
+ 
+    
+    
+    
+     
+    
+    
+    
+    
+
+    
+     
+   
+    
+    
+    
+	
+  
+  
+	
+	
+	
+	
+	 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	

@@ -1,0 +1,13 @@
+<div class="container">    
+    <app-header></app-header>
+    <div class="row">
+        <div class="col-md-12">
+           <router-outlet></router-outlet>
+        </div>
+    </div>
+    <!-- here the selector wouldn't work, unlike routing which need merly a declarations of component, 
+    the selector/component need to be declared in the module where this components (hosting component)
+    is declare if we use : <app-signin></app-signin> inside AppComponent we need to declare it inside AppModule, or 
+    we import a feature-module (e.g. AuthModule) into AppModule, and we need to expose (export) the nested component AppSignin
+    inside feature-module (e.g. AuthModule)  -->
+</div>
